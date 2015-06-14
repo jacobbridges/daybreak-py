@@ -1,6 +1,8 @@
 __author__ = 'stanley'
 
 import marshal
+import binascii
+
 
 class Serializer(object):
 
@@ -13,22 +15,30 @@ class Serializer(object):
             pass
 
         def isbinary(self, str):
-
-            # Check if the string is binary
-            # return true or false
-
-            return False
+            """Check if the string is binary, returns true or false."""
+            try:
+                # Try to parse string as binary string
+                int(str, 2)
+            except ValueError:
+                # If the parse failed with ValueError, string is not binary
+                return False
+            except Exception as e:
+                # If unexpected error occurred, raise it
+                raise e
+            # If the parse succeeded, string is binary
+            return True
 
         def encode_binary(self, str):
-
-            # Encode a string to binary
-            # return encoded string
-            return str
+            """Encode a string to binary, return encoded string."""
+            return bin(int(binascii.hexlify(str.encode('utf-8')), 16))
 
         def can_binary(self, str):
-
-            # Check if the passed 'string' can convert to binary
-
+            """Check if the passed 'string' can convert to binary, return true or false."""
+            # Not sure how to do this..so for now I will just try to encode it and return false if fails.
+            try:
+                self.encode_binary(str)
+            except Exception:
+                return False
             return True
 
         def key_for(self, key):
@@ -43,24 +53,21 @@ class Serializer(object):
         def load(self, value):
             return value
 
-    # Default serializer which converts
     class Default(BaseObj):
+        """Default serializer which converts"""
 
         def __init__(self):
+            Serializer.BaseObj.__init__(self)
             pass
 
-        # Transform the key to a string
         def key_for(self, key):
+            """Transform the key to a string."""
             return str(key)
 
-        # Serialize a value
         def dump(self, value):
+            """Serialize a value and return the binary string."""
             return marshal.dumps(value)
 
-        # Parse a value
         def load(self, value):
+            """Parse a binary string and return the parsed value."""
             return marshal.loads(value)
-
-if __name__ == "__main__":
-    d = Serializer.Default()
-    print d.dump('afdvscds')
