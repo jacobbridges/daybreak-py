@@ -1,6 +1,7 @@
-__author__ = 'stanley'
+__author__ = 'stanley, jacob'
 
 import os
+from .utils import bytesize
 from .FileLock import FileLock
 from Queue import Queue
 from threading import Thread
@@ -172,7 +173,7 @@ class Journal(Queue):
         with fl:
             self.file.write(dump)
             self.file.flush()
-        if self.pos and (self.file.tell() == self.pos + len(dump.decode('utf-8').encode('utf-8'))):
+        if self.pos and (self.file.tell() == self.pos + bytesize(dump)):
             self.pos = self.file.tell()
 
     class TempFile(object):
