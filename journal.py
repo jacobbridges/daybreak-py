@@ -38,6 +38,10 @@ class Journal(Queue):
         # Load any current journal entries
         self.load()
 
+    def __lshift__(self, record):
+        """Puts an item in the queue via journal << record."""
+        self.put(record, block=False)
+
     def closed(self):
         """Is the journal closed?"""
         return self.file.closed
@@ -135,7 +139,7 @@ class Journal(Queue):
     def dump(self, records, dump=''):
         """Return database dump as string."""
         for record in records:
-            record[1] = self.serializer.dump(record.last)
+            record[1] = self.serializer.dump(record[-1])
             dump += self.format.dump(record)
         return dump
 
@@ -151,7 +155,7 @@ class Journal(Queue):
                             self.write(self.dump(record))
                             self.size += len(record)
                         else:
-                            record[1] = self.serializer.dump(record.last) if record.size > 1 else  None
+                            record[1] = self.serializer.dump(record[-1]) if record.size > 1 else  None
                             self.write(self.format.dump(record))
                             self.size += 1
                     except Exception as ex:
