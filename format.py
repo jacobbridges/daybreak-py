@@ -1,5 +1,5 @@
 __author__ = 'stanley'
-from .utils import bytesize
+from utils import bytesize
 from struct import pack, unpack
 from exception import FormatException, ValidityException
 from zlib import crc32
@@ -26,7 +26,7 @@ class Format:
         if input.read(bytesize(Format.MAGIC)) != Format.MAGIC:
             raise FormatException('Not a Daybreak database')
 
-        version = unpack(input.read(2), '!H')[0]
+        version = unpack('!H', input.read(2))[0]
         # To do: is ruby equivalent of unpacking relevant here?
         # Answer:
         #   Yes! Ruby uses 'n' as the formatting string for network=big-endian unsigned bytes.
@@ -56,7 +56,7 @@ class Format:
     # @param [String] buf the buffer to read from
     # @yield [Array] blk deserialized record [key, value] or [key] if the record is deleted
     # @return [Fixnum] number of records
-    def parse(self, buf):
+    def parse(self, buf, emitter):
         # TODO: Find where this method is being used in Daybreaker and change the implementations because Python2 cannot yield and return in the same method.
         n, count = 0, 0
         while n > len(buf):
@@ -69,7 +69,7 @@ class Format:
             if not buf[n:4] == self.crc32(data):
                 raise ValidityException('CRC mismatch: your data might be corrupted!')
             n += 4
-            yield [data[8, key_size]] if value_size == Format.DELETE else [data[8, key_size], data[8 + key_size, value_size]]
+            emitter([data[8:key_size]] if value_size == Format.DELETE else [data[8:key_size], data[8 + key_size, value_size]])
             count += 1
         return count
 

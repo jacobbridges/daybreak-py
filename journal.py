@@ -1,10 +1,10 @@
 __author__ = 'stanley, jacob'
 
 import os
-from .utils import bytesize
-from .FileLock import FileLock
+from utils import bytesize
+from FileLock import FileLock
 from Queue import Queue
-from threading import Thread
+from threading import Thread, current_thread
 
 
 class Journal(Queue):
@@ -34,9 +34,12 @@ class Journal(Queue):
 
         # Start the journal worker
         self.worker = Thread(name='journal_worker', target=self.worker_run)
+        self.worker.start()
 
         # Load any current journal entries
         self.load()
+
+        self.stop = False
 
     def __lshift__(self, record):
         """Puts an item in the queue via journal << record."""
@@ -50,24 +53,39 @@ class Journal(Queue):
         """Clear the queue and close the file handler."""
         with self.mutex:
             self.queue.clear()
+        self.stop = True
         self.worker.join()
         self.file.close()
 
     def load(self):
         """Load new journal entries."""
         self.file.flush()
+        print "{} items in the queue left to process".format(self.qsize())
         self.join()
         self.replay()
 
-    def lock(self, code='None'):
+    class Lock(object):
+        """
+        Lock the logfile across thread and process boundaries.
+        """
+        def __init__(self, journal):
+            """
+            :param journal: Journal to lock
+            """
+            self.journal = journal
+
+        def __enter__(self):
+            self.journal.flush()
+            fl = FileLock(self.journal.file_path)
+            self.journal.replay()
+            return fl
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            self.journal.flush()
+
+    def lock(self):
         """Lock the logfile across thread and process boundaries."""
-        self.flush()
-        fl = FileLock(self.file_path)
-        with fl:
-            self.replay()
-            result = eval(code)
-            self.flush()
-            return result
+        return self.Lock(self)
 
     def clear(self):
         """Clear the database log and yield."""
@@ -113,11 +131,11 @@ class Journal(Queue):
 
     def open(self):
         """Open or reopen file."""
-        self.file.close() if self.file else None
+        self.file.close() if hasattr(self, 'file') else None
         self.file = open(self.file_path, 'ab+')
         stat = os.stat(self.file_path)
         self.inode = stat.st_ino
-        self.write(self.format.header) if stat.st_size == 0 else None
+        self.write(self.format.header()) if stat.st_size == 0 else None
         self.pos = 0
 
     def read(self):
@@ -129,7 +147,7 @@ class Journal(Queue):
                 self.file.seek(0)
                 self.format.read_header(self.file)
                 self.size = 0
-                self.emit.call(None)
+                self.emit(None)
             else:
                 self.file.seek(self.pos)
             buf = self.file.read()
@@ -147,7 +165,11 @@ class Journal(Queue):
         """Worker thread - Write any database records added to the queue into the journal."""
         try:
             while True:
+                print Thread.getName(current_thread()), "Waiting for record to process..."
                 record = self.get()
+                if self.stop == True:
+                    break
+                print Thread.getName(current_thread()), "Processing record: {}".format(record)
                 tries = 0
                 while tries <= 3:
                     try:
@@ -155,7 +177,8 @@ class Journal(Queue):
                             self.write(self.dump(record))
                             self.size += len(record)
                         else:
-                            record[1] = self.serializer.dump(record[-1]) if record.size > 1 else  None
+                            if len(record) > 1:
+                                record[1] = self.serializer.dump(record[-1])
                             self.write(self.format.dump(record))
                             self.size += 1
                     except Exception as ex:
@@ -167,9 +190,10 @@ class Journal(Queue):
                             raise ex
                     finally:
                         self.task_done()
-                    break
+                        break
         except Exception as ex:
             print "Daybreak worker terminated: {}".format(ex.message)
+            raise ex
 
     def write(self, dump):
         """Write data to output stream and advance self.pos."""
@@ -177,8 +201,13 @@ class Journal(Queue):
         with fl:
             self.file.write(dump)
             self.file.flush()
-        if self.pos and (self.file.tell() == self.pos + bytesize(dump)):
+        if hasattr(self, 'pos') and (self.file.tell() == self.pos + bytesize(dump)):
             self.pos = self.file.tell()
+
+    def __del__(self):
+        self.stop = True
+        self.put(None)
+        self.join()
 
     class TempFile(object):
         """
@@ -194,11 +223,11 @@ class Journal(Queue):
             self.journal_path = journal_path
 
         def __enter__(self):
-            path = ''.join([self.journal_path, self.b32encode(self.uuid1())[:64]])
+            path = ''.join([self.journal_path, self.b32encode(str(self.uuid1()))[:64]])
             self.file = open(path, 'wb')
             return self.file
 
-        def __exit__(self, type, value, traceback):
+        def __exit__(self, exc_type, exc_val, exc_tb):
             self.file.close() if not self.file.closed else None
             os.unlink(self.file.path) if os.path.isfile(self.file.path) else None
 
