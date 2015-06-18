@@ -1,4 +1,4 @@
-__author__ = 'stanley'
+__author__ = 'stanley, jacob'
 
 import marshal
 import binascii

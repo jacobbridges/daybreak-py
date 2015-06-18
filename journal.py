@@ -4,7 +4,7 @@ import os
 from utils import bytesize
 from FileLock import FileLock
 from Queue import Queue
-from threading import Thread, current_thread
+from threading import Thread, current_thread, Event
 
 
 class Journal(Queue):
@@ -32,14 +32,12 @@ class Journal(Queue):
         # Open the journal file
         self.open()
 
-        # Start the journal worker
-        self.worker = Thread(name='journal_worker', target=self.worker_run)
-        self.worker.start()
-
         # Load any current journal entries
         self.load()
 
-        self.stop = False
+        # Start the journal worker
+        self.worker = Thread(name='journal_worker', target=self.worker_run)
+        self.worker.start()
 
     def __lshift__(self, record):
         """Puts an item in the queue via journal << record."""
@@ -53,7 +51,7 @@ class Journal(Queue):
         """Clear the queue and close the file handler."""
         with self.mutex:
             self.queue.clear()
-        self.stop = True
+        self.put(None)
         self.worker.join()
         self.file.close()
 
@@ -165,11 +163,10 @@ class Journal(Queue):
         """Worker thread - Write any database records added to the queue into the journal."""
         try:
             while True:
-                print Thread.getName(current_thread()), "Waiting for record to process..."
                 record = self.get()
-                if self.stop == True:
+                if record is None:
+                    print 'Shutting down daybreaker worker.'
                     break
-                print Thread.getName(current_thread()), "Processing record: {}".format(record)
                 tries = 0
                 while tries <= 3:
                     try:
@@ -183,7 +180,7 @@ class Journal(Queue):
                             self.size += 1
                     except Exception as ex:
                         tries += 1
-                        print "Daybreak worker, try {}: {}".format(tries, ex.message)
+                        print "Daybreak worker, try {}: {}".format(tries, ex)
                         if tries <= 3:
                             continue
                         else:
@@ -201,11 +198,10 @@ class Journal(Queue):
         with fl:
             self.file.write(dump)
             self.file.flush()
-        if hasattr(self, 'pos') and (self.file.tell() == self.pos + bytesize(dump)):
+        if hasattr(self, 'pos') and (self.file.tell() == self.pos + len(dump)):
             self.pos = self.file.tell()
 
     def __del__(self):
-        self.stop = True
         self.put(None)
         self.join()
 

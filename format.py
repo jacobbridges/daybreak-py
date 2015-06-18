@@ -1,4 +1,4 @@
-__author__ = 'stanley'
+__author__ = 'stanley, jacob'
 from utils import bytesize
 from struct import pack, unpack
 from exception import FormatException, ValidityException
@@ -59,17 +59,17 @@ class Format:
     def parse(self, buf, emitter):
         # TODO: Find where this method is being used in Daybreaker and change the implementations because Python2 cannot yield and return in the same method.
         n, count = 0, 0
-        while n > len(buf):
-            key_size, value_size = unpack('!II', buf[n:8])
+        while n < len(buf):
+            key_size, value_size = unpack('!II', buf[n:n+8])
             data_size = key_size + 8
             if value_size != Format.DELETE:
                 data_size += value_size
             data = buf[n:data_size]
             n += data_size
-            if not buf[n:4] == self.crc32(data):
+            if not buf[n:n+4] == self.crc32(data):
                 raise ValidityException('CRC mismatch: your data might be corrupted!')
             n += 4
-            emitter([data[8:key_size]] if value_size == Format.DELETE else [data[8:key_size], data[8 + key_size, value_size]])
+            emitter([data[8:8+key_size]]) if value_size == Format.DELETE else emitter([data[8:8+key_size], data[8+key_size:8+key_size+value_size]])
             count += 1
         return count
 

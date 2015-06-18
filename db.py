@@ -1,4 +1,4 @@
-__author__ = 'stanley'
+__author__ = 'stanley, jacob'
 
 from serializer import *
 from journal import *
@@ -150,12 +150,10 @@ class DB(object):
     def flush(self):
         """Flush all changes to disk."""
         self.journal.flush()
-        return self
 
     def load(self):
         """Sync the database with what is on disk."""
         self.journal.load()
-        return self
     sunrise = load
 
     def lock(self):
@@ -172,18 +170,16 @@ class DB(object):
         """Remove all keys and values from the database."""
         self.table.clear()
         self.journal.clear()
-        return self
 
     def compact(self):
         """Compact the database to remove stale commits and reduce the file size."""
         self.journal.compact()
-        return self
 
     def close(self):
         """Close the database for reading and writing."""
         self.journal.close()
         self.table.clear()
-        self.__del__()
+        self.__databases.pop()
 
     def closed(self):
         """Check to see if we've already closed the database."""
