@@ -1,5 +1,3 @@
-__author__ = 'stanley, jacob'
-
 import os
 from utils import bytesize
 from FileLock import FileLock

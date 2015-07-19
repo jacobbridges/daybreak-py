@@ -1,5 +1,3 @@
-__author__ = 'stanley, jacob'
-
 import marshal
 import binascii
 

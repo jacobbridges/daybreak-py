@@ -1,5 +1,3 @@
-__author__ = 'stanley, jacob'
-
 from serializer import *
 from journal import *
 from format import *

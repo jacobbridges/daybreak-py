@@ -1,4 +1,3 @@
-__author__ = 'stanley, jacob'
 from utils import bytesize
 from struct import pack, unpack
 from exception import FormatException, ValidityException
