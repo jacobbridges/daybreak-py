@@ -1,6 +1,6 @@
-from serializer import *
-from journal import *
-from format import *
+from serializer import Serializer
+from journal import Journal
+from format import Format
 from collections import defaultdict
 import mutex
 
@@ -38,8 +38,10 @@ class DB(object):
             else:
                 options['default'] = lambda: options['default']
 
-        # Set instance variables
+        # Create a new serializer object
         self.serializer = options['serializer']()
+
+        # Create the instance dictionary
         self.table = defaultdict(options['default'])
 
         # Create the journal and block function to send to journal
@@ -47,7 +49,7 @@ class DB(object):
             if not record:
                 self.table.clear()
             elif len(record) == 1:
-                self.table.delete(record[0])
+                del self.table[record[0]]
             else:
                 self.table[record[0]] = self.serializer.load(record[-1])
         self.journal = Journal(file_name, options['format'](), self.serializer, block)

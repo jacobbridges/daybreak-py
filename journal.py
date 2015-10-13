@@ -1,11 +1,10 @@
 import os
-from utils import bytesize
 from FileLock import FileLock
 from Queue import Queue
 from threading import Thread, current_thread, Event
 
 
-class Journal(Queue):
+class Journal(object, Queue):
     """
     The Journal is a thread-safe queue which appends to a file.
     """
@@ -136,8 +135,7 @@ class Journal(Queue):
 
     def read(self):
         """Read new file content"""
-        fl = FileLock(self.file_path)
-        with fl:
+        with FileLock(self.file_path) as fl:
             assert fl.is_locked
             if not self.pos:
                 self.file.seek(0)
@@ -192,8 +190,7 @@ class Journal(Queue):
 
     def write(self, dump):
         """Write data to output stream and advance self.pos."""
-        fl = FileLock(self.file_path)
-        with fl:
+        with FileLock(self.file_path):
             self.file.write(dump)
             self.file.flush()
         if hasattr(self, 'pos') and (self.file.tell() == self.pos + len(dump)):

@@ -60,7 +60,7 @@ class Format:
         n, count = 0, 0
         while n < len(buf):
             key_size, value_size = unpack('!II', buf[n:n+8])
-            data_size = key_size + 8
+            data_size = 8 + key_size
             if value_size != Format.DELETE:
                 data_size += value_size
             data = buf[n:data_size]
@@ -68,7 +68,10 @@ class Format:
             if not buf[n:n+4] == self.crc32(data):
                 raise ValidityException('CRC mismatch: your data might be corrupted!')
             n += 4
-            emitter([data[8:8+key_size]]) if value_size == Format.DELETE else emitter([data[8:8+key_size], data[8+key_size:8+key_size+value_size]])
+            if value_size == Format.DELETE:
+                emitter([data[8:8+key_size]])
+            else:
+                emitter([data[8:8+key_size], data[8+key_size:8+key_size+value_size]])
             count += 1
         return count
 
