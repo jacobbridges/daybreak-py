@@ -1,4 +1,4 @@
-# daybreaker-py
+# daybreaker_py
 
 Python clone of daybreaker http://propublica.github.io/daybreak/
 
