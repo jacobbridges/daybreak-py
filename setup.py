@@ -24,7 +24,8 @@ setup(
 
     # Dependencies
     install_requires=[
-        'toolz'
+        'toolz',
+        'nose'
     ],
     packages=['daybreak'],
 
