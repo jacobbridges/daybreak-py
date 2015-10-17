@@ -1,5 +1,7 @@
 # daybreak-py
 
+[![Build Status](https://travis-ci.org/jacobbridges/daybreak-py.svg?branch=master)](https://travis-ci.org/jacobbridges/daybreak-py)
+
 Python clone of daybreak http://propublica.github.io/daybreak/
 
 # Contributors
