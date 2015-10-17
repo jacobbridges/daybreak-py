@@ -134,8 +134,8 @@ class DB(object):
 
     def close(self):
         """Close the database for reading and writing."""
-        self._journal.close()
         self.clear()
+        self._journal.close()
 
     def closed(self):
         """Checks if the database connection has been closed."""
