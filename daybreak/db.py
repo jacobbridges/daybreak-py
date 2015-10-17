@@ -142,6 +142,10 @@ class DB(object):
         """Checks if the database connection has been closed."""
         return self._journal.closed()
 
+    def values(self):
+        """Returns a list of the internal dictionary values."""
+        return self._data.values()
+
     def __del__(self):
         """A handler that will ensure that databases are closed and synced when the current process exits."""
         pass

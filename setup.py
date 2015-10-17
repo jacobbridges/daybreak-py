@@ -5,7 +5,7 @@ from setuptools import setup
 setup(
     # Metadata
     name='daybreak',
-    version='1.0.3',
+    version='1.0.4',
     description='Python clone of daybreak key-value database: http://propublica.github.io/daybreak',
     url='https://github.com/jacobbridges/daybreak-py',
     download_url='https://github.com/jacobbridges/daybreak-py/archive/master.tar.gz',

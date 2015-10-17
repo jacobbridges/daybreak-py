@@ -32,3 +32,10 @@ def test_daybreak_loads_record():
     testdb.load()
     assert testdb['foo'] == 'bar'
     cleanup(testdb)
+
+def test_daybreak_values_func():
+    testdb = setup()
+    testdb['foo'] = 'bar'
+    testdb['baz'] = 'foo'
+    assert testdb.values() == ['bar', 'foo']
+    cleanup(testdb)
