@@ -122,9 +122,10 @@ class DB(object):
         """Synchronize access to the database from multiple threads."""
         pass
 
-    def clear(self):
+    def clear(self, flush=False):
         """Remove all keys and values from the database."""
-        self._journal.clear()
+        if flush:
+            self._journal.clear()
         return self._data.clear()
 
     def compact(self):
