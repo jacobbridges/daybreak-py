@@ -8,6 +8,7 @@ from struct import pack, unpack
 from StringIO import StringIO
 from toolz import first
 from binascii import crc32
+import json
 
 
 class BaseFormat(object):
@@ -78,34 +79,36 @@ class DefaultFormat(BaseFormat):
         return bytearray(self.MAGIC) + bytearray(pack('!H', self.VERSION))
 
     def serialize(self, data):
-        data = map(lambda x: bytearray(str(x)), data)
+        data[0] = bytearray(str(data[0]))
         if len(data) == 1:
             record = bytearray(pack('!II', len(data[0]), self.DELETE)) + data[0]
         else:
+            if data[1] is dict:
+                data[1] = json.dumps(data[1])
+            data[1] = bytearray(str(data[1]))
             record = bytearray(pack('!II', len(data[0]), len(data[1]))) + data[0] + data[1]
         return record + bytearray(self.crc32(record))
 
     def deserialize(self, string):
-        print 'deserializing {}'.format(bytearray(string))
         string = StringIO(string)
         while string.tell() < string.len:
             meta = string.read(8)
             key_size, value_size = unpack('!II', meta)
-            print key_size, value_size
             data_size = key_size
             if value_size != self.DELETE:
                 data_size += value_size
             data = string.read(data_size)
-            crc = string.read(4)
-            print crc
-            print self.crc32(meta + data)
-            if crc != self.crc32(meta + data):
+            if string.read(4) != self.crc32(meta + data):
                 raise FormatException("CRC mismatch: your data might be corrupted!")
             if value_size == self.DELETE:
                 yield [data[:key_size]]
             else:
-                print 'yielding {}'.format([data[:key_size], data[-value_size:]])
-                yield [data[:key_size], data[-value_size:]]
+                value = data[-value_size:]
+                try:
+                    value = eval(value)
+                except:
+                    pass
+                yield [data[:key_size], value]
 
     def crc32(self, s):
-        return pack('!I', crc32(str(s)))
+        return pack('!I', crc32(str(s)) & 0xffffffff)
