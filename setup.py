@@ -7,6 +7,7 @@ setup(
     name='daybreak',
     version='1.0.4',
     description='Python clone of daybreak key-value database: http://propublica.github.io/daybreak',
+    long_description='Python clone of daybreak key-value database: http://propublica.github.io/daybreak',
     url='https://github.com/jacobbridges/daybreak-py',
     download_url='https://github.com/jacobbridges/daybreak-py/archive/master.tar.gz',
     license='MIT',
