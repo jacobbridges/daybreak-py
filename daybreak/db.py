@@ -31,6 +31,7 @@ class DB(object):
 
     def __getitem__(self, key):
         """Retrieve a value at key from the database."""
+        self.set(key, self._data.default_factory())
         return self._data[key]
     get = __getitem__
 
