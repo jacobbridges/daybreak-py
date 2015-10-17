@@ -1,7 +1,9 @@
 """
 format.py
 
-Description
+classes:
+  BaseFormat
+  DefaultFormat
 """
 from abc import ABCMeta, abstractmethod
 from struct import pack, unpack

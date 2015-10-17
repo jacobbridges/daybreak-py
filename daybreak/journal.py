@@ -1,7 +1,8 @@
 """
 journal.py
 
-Journal description...
+classes:
+  Journal
 """
 import os
 import toolz
@@ -12,54 +13,66 @@ from threading import Thread
 
 class Journal(Queue):
     """
-    class Journal
-
+    Class for interacting with the database file (or "journal") via a thread-safe Queue.
     """
     def __init__(self, file_path, formatter):
-        print 'initialize journal'
+        """Initialize the journal with a database file, formatter object, and thread."""
         Queue.__init__(self)
         self.file_path = file_path
+        self.formatter = formatter
         self.file = None
         self.inode = None
         self.count = 0
         self.byte_size = 0
         self.pos = 0
-        self.formatter = formatter
-
-        print 'opening journal file'
         self.open()
-
         self.thread = Thread(target=self.worker)
+        self.thread.daemon = True
         self.thread.start()
 
     def __lshift__(self, record):
+        """
+        Send record to be processed by the internal thread.
+        :param record: Python list with either [key, value] or [key]
+        """
         self.put(record)
 
-    def clean(self):
-        pass
+    def clear(self):
+        """Clear the journal file's contents."""
+        self.file.seek(0)
+        self.file.truncate()
+        self.file.close()
+        self.open()
 
     def closed(self):
+        """Check if the journal file is closed."""
         return self.file.closed
 
     def close(self):
+        """Clear the queue, stop the thread, and close the journal file."""
         with self.mutex:
             self.queue.clear()
         self.put(None)
         self.file.close()
 
     def load(self):
-        print 'loading db file'
+        """
+        Load all the records from the journal file and return the non-deleted ones.
+        :return: list of records
+        """
         if len(self.queue) > 0:
-            print "{} items in the queue left to process".format(len(self.queue))
             self.join()
         self.pos = 0
-        self.count = 0
-        return filter(lambda x: len(x) > 1, list(self.formatter.deserialize(self.read())))
+        data = filter(lambda x: len(x) > 1, list(self.formatter.deserialize(self.read())))
+        self.count = len(data)
+        return data
 
     def opened(self):
+        """Check if the journal file is open."""
         return not self.file.closed
 
     def open(self):
+        """Open the journal file, or create a new journal file if it does not exist."""
         self.file = open(self.file_path, 'ab+')
         stat = os.stat(self.file_path)
         self.inode = stat.st_ino
@@ -68,6 +81,10 @@ class Journal(Queue):
         self.pos = self.file.tell()
 
     def read(self):
+        """
+        Read the journal file from previous position, returning the contents as bytes.
+        :return: The data from file as a byte array.
+        """
         with FileLock(self.file_path):
             self.file.seek(self.pos)
             if self.pos is 0:
@@ -77,6 +94,10 @@ class Journal(Queue):
         return bytearray(str(buf))
 
     def write(self, string):
+        """
+        Write some data to the journal file.
+        :param string: Serialized data
+        """
         string = bytearray(str(string))
         with FileLock(self.file_path):
             self.file.write(string)
@@ -84,6 +105,7 @@ class Journal(Queue):
         self.pos = self.file.tell()
 
     def worker(self):
+        """Threaded function which processes records put in the internal queue."""
         while True:
             record = self.get()
             if record is None:
