@@ -1,6 +1,6 @@
-# daybreaker_py
+# daybreak-py
 
-Python clone of daybreaker http://propublica.github.io/daybreak/
+Python clone of daybreak http://propublica.github.io/daybreak/
 
 # Contributors
 
