@@ -1,4 +1,4 @@
-from daybreak.db import DB
+from daybreak import DB
 import os
 
 file_path = './test.db'
@@ -32,6 +32,7 @@ def test_daybreak_loads_record():
     testdb.load()
     assert testdb['foo'] == 'bar'
     cleanup(testdb)
+
 
 def test_daybreak_values_func():
     testdb = setup()

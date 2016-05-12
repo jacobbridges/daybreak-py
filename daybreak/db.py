@@ -3,13 +3,18 @@ db.py
 
 Main functions for daybreak.
 """
-import toolz
-from toolz import curry
+from __future__ import absolute_import
 from sys import getsizeof
-from collections import defaultdict
-from journal import Journal
-from format import DefaultFormat
+from collections import defaultdict, namedtuple
 
+from toolz import curry, merge
+
+from .journal import Journal
+from .format import DefaultFormat
+
+
+####################################################################################################
+# Classes
 
 class DB(object):
 
@@ -62,7 +67,7 @@ class DB(object):
     def update(self, d):
         """Update database with dict (Fast batch update)."""
         [self.set(*x) for x in d.iteritems()]
-        return toolz.merge(self._data, d)
+        return merge(self._data, d)
 
     def update_flush(self, d):
         """Update database with dict (Fast batch update)."""

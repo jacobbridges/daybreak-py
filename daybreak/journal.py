@@ -5,16 +5,22 @@ classes:
   Journal
 """
 import os
-import toolz
+
 from Queue import Queue
-from FileLock import FileLock
 from threading import Thread
+
+from FileLock import FileLock
+
+
+####################################################################################################
+# Classes
 
 
 class Journal(Queue):
     """
     Class for interacting with the database file (or "journal") via a thread-safe Queue.
     """
+
     def __init__(self, file_path, formatter):
         """Initialize the journal with a database file, formatter object, and thread."""
         Queue.__init__(self)
